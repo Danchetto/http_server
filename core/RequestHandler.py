@@ -1,22 +1,22 @@
 import os
-
+import base64
 import datetime
-import urllib
+import urllib.parse
 
 
 class RequestHandler:
     allowed_methods = ["GET", "HEAD"]
 
     def __init__(self, request, document_root):
-        self.request = request.decode('utf8')
+        self.request = request.decode('utf-8')
         self.document_root = document_root
         self.headers, self.method, self.uri, self.version_protocol = self.__parse_request(self.request)
-        # self.uri = urllib.unquote(self.uri)
+        self.uri = urllib.parse.unquote(self.uri)
         self.uri = self.uri.split('?')[0]
 
     def get_response(self):
         if not self.method in self.allowed_methods:
-            return self.__http403()
+            return self.__http405()
         path = self.__get_path()
 
         if '../' in path:
@@ -26,6 +26,7 @@ class RequestHandler:
         return self.__build_response(path)
 
     def __parse_request(self, request):
+        print(request)
         data = request.split('\r\n\r\n')
         data_for_headers = data[0].split('\r\n')
 
@@ -40,8 +41,15 @@ class RequestHandler:
         return '%(root)s%(path)s' % {'root': self.document_root, 'path': path}
 
     def __build_response(self, path):
+
+        if not (path.startswith(os.path.normpath('/'))) or not (os.path.exists(os.path.join(path))):
+            return self.__http404()
+
+        if not (os.path.isfile(path)) and not os.path.isfile(os.path.join(path, 'index.html')):
+            return self.__http403()
+
         try:
-            f = open(path)
+            f = open(path, 'rb')
             body = f.read()
             f.close()
         except IOError:
@@ -55,7 +63,7 @@ class RequestHandler:
         response += "Content-Length: %(len)s\n" % {'len': len(body)}
         response += "\n"
 
-        response += body
+        response = response.encode() + body
 
         return response
 
@@ -72,25 +80,27 @@ class RequestHandler:
 
         response += "\r\n\r\n"
 
-        return response
+        return response.encode()
 
     def __http404(self):
         response = "HTTP/1.1 404 NOT FOUND\n"
-        response += self.__get_server_str()
-        response += self.__get_conection_str()
-        response += self.__get_date_str()
-        response += "Content-Type: text/html; charset=UTF-8\n"
-        response += "\n"
-        return response
+        return self.__error_response(response)
+
+    def __http405(self):
+        response = "HTTP/1.1 405 METHOD NOT ALLOWED\n"
+        return self.__error_response(response)
 
     def __http403(self):
-        response = "HTTP/1.1 405 METHOD NOT ALLOWED\n"
+        response = "HTTP/1.1 403 FORBIDDEN\n"
+        return self.__error_response(response)
+
+    def __error_response(self, response):
         response += self.__get_server_str()
         response += self.__get_conection_str()
         response += self.__get_date_str()
         response += "Content-Type: text/html; charset=UTF-8\n"
         response += "\n"
-        return response
+        return response.encode()
 
     def __get_extension_content_type(self, path):
         content_types = {

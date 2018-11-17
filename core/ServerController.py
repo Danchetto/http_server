@@ -1,7 +1,5 @@
 import socket
 
-import sys
-
 from core.ThreadHandler import ThreadHandler
 
 
@@ -14,23 +12,15 @@ class ServerController:
 
         self.threads = []
 
-    def get_step_function(self, i):
-        def step(index):
-            return i + self.thread_count*index
-        return step
-
     def run(self):
-        # stepper = self.get_step_function(0)
-        # stepper2 = self.get_step_function(1)
-
-        tcpServer = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        tcpServer.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        tcpServer.bind(('0.0.0.0', self.port))
-        tcpServer.listen(self.thread_count)
+        tcp_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        tcp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        tcp_server.bind(('0.0.0.0', self.port))
+        tcp_server.listen(self.thread_count)
 
         for i in range(0, self.thread_count):
-            print('spawning thread', i)
-            thread = ThreadHandler(tcpServer, self.document_root)
+            print('created thread', i)
+            thread = ThreadHandler(tcp_server, self.document_root)
             self.threads.append(thread)
             thread.start()
 
