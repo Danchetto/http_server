@@ -21,6 +21,7 @@ class RequestHandler:
 
         if '../' in path:
             return self.__http404()
+
         if self.method == 'HEAD':
             return self.__build_head_response(path)
         return self.__build_response(path)
@@ -42,10 +43,7 @@ class RequestHandler:
 
     def __build_response(self, path):
 
-        if not (path.startswith(os.path.normpath('/'))) or not (os.path.exists(os.path.join(path))):
-            return self.__http404()
-
-        if not (os.path.isfile(path)) and not os.path.isfile(os.path.join(path, 'index.html')):
+        if ('index.html' in path) and not os.path.exists(path):
             return self.__http403()
 
         try:
