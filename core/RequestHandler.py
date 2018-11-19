@@ -27,7 +27,6 @@ class RequestHandler:
         return self.__build_response(path)
 
     def __parse_request(self, request):
-        print(request)
         data = request.split('\r\n\r\n')
         data_for_headers = data[0].split('\r\n')
 
